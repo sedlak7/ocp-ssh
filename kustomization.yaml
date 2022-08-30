@@ -1,0 +1,23 @@
+namespace: sshd
+resources:
+- manifests/ns.yaml
+- manifests/sa.yaml
+- manifests/sshd.yaml
+- manifests/sshd-anyuid.yaml
+- manifests/rolebinding.yaml
+- manifests/role.yaml
+
+secretGenerator:
+- name: sshd-keys
+  files:
+  - resources/sshd_config
+
+configMapGenerator:
+- name: authorized-keys
+  files:
+  - resources/authorized_keys
+- name: init-script
+  files:
+  - scripts/init.sh
+
+
