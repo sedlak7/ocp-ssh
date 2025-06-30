@@ -1,4 +1,4 @@
-namespace: sshd
+namespace: pmdd
 resources:
 - manifests/ns.yaml
 - manifests/sa.yaml

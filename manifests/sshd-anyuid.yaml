@@ -2,8 +2,12 @@ apiVersion: v1
 kind: Service
 metadata:
   name: sshd-anyuid-service
-  namespace: sshd
+  namespace: pmdd
+annotations:
+  metallb.universe.tf/address-pool: pmdd-sshd-reserved
 spec:
+  type: LoadBalancer
+  externalTrafficPolicy: Local
   selector:
     pod: sshd-anyuid-label
   ports:
@@ -11,11 +15,38 @@ spec:
       protocol: TCP
       port: 2022
 ---
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+name: pmdd-sshd-reserved
+namespace: pmdd
+spec:
+addresses:
+- 10.111.76.100/32
+autoAssign: true
+serviceAllocation:
+  namespaces:
+    - pmdd
+  serviceSelectors:
+    - matchLabels:
+        app.kubernetes.io/name: sshd-anyuid-label
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: sshd
+  namespace: pmdd
+spec:
+  ipAddressPools:
+  - pmdd-sshd-reserved
+  nodeSelectors:
+  - matchLabels:
+      node-role.kubernetes.io/worker: ""  
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: sshd-anyuid-deployment
-  namespace: sshd
+  namespace: pmdd
 spec:
   revisionHistoryLimit: 3
   selector:
@@ -34,7 +65,7 @@ spec:
         - name: sshd-anyuid
           securityContext:
             runAsUser: 1000
-          image: quay.io/mwasher/sshd:latest
+          image: ghcr.io/sedlak7/sshd:1.0.1
           ports:
             - name: ssh
               containerPort: 2022
