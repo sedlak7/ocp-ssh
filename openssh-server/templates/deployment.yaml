@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "openssh-server.fullname" . }}
+  labels:
+  {{- include "openssh-server.labels" . | nindent 4 }}
+spec:
+  revisionHistoryLimit: {{ .Values.opensshServer.revisionHistoryLimit }}
+  selector:
+    matchLabels:
+    {{- include "openssh-server.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+      {{- include "openssh-server.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - env:
+        - name: TZ
+          value: {{ quote .Values.opensshServer.opensshServer.env.tz }}
+        image: {{ .Values.opensshServer.opensshServer.image.repository }}:{{ .Values.opensshServer.opensshServer.image.tag
+          | default .Chart.AppVersion }}
+        name: openssh-server
+        ports:
+        - containerPort: 2022
+          name: ssh
+        resources: {}
+        securityContext: {{- toYaml .Values.opensshServer.opensshServer.containerSecurityContext
+          | nindent 10 }}
+        volumeMounts:
+        - name: data
+          mountPath: /data
+          readOnly: false
+        - mountPath: /opt/ssh/sshd-keys
+          name: sshd-keys
+        - mountPath: /opt/ssh/sshd_config
+          name: sshd-config
+          subPath: sshd_config
+        - mountPath: /opt/ssh/authorized_keys
+          name: authorized-keys
+          subPath: authorized_keys
+        - mountPath: /tmp/ssh
+          name: tmp
+        - mountPath: /init.sh
+          name: init-script
+          subPath: init.sh
+      serviceAccountName: openssh-server-sa
+      volumes:
+      - name: data
+        {{- if .Values.exitingPvc }}
+        persistentVolumeClaim:
+          claimName: {{ .Values.exitingPvc }}
+        {{- else }}          
+        emptyDir: {}
+        {{- end }}        
+      - name: sshd-keys
+        secret:
+          secretName: {{ include "openssh-server.fullname" . }}-sshdkeys
+          optional: true          
+      - name: sshd-config
+        configMap:
+          name: {{ include "openssh-server.fullname" . }}-sshdconfig
+      - configMap:
+          name: {{ include "openssh-server.fullname" . }}-authorizedkeys
+        name: authorized-keys
+      - emptyDir: {}
+        name: tmp
+      - configMap:
+          defaultMode: 111
+          name: {{ include "openssh-server.fullname" . }}-initscript
+        name: init-script

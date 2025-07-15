@@ -1,0 +1,107 @@
+fullnameOverride: "openssh-server"
+metaenvironment: ""
+opensshServer:
+  opensshServer:
+    containerSecurityContext:
+    env:
+      tz: Europe/Bratislava
+    image:
+      repository: ghcr.io/sedlak7/sshd
+      tag: 1.0.1
+  revisionHistoryLimit: 3
+service:
+  ports:
+  - name: ssh-tcp
+    port: 2022
+    protocol: TCP
+    targetPort: ssh
+  type: ClusterIP
+  #type: LoadBalancer
+  annotations: {}
+  externalTrafficPolicy: Local
+sa:
+  serviceAccount:
+    annotations: {}
+metallb:
+  enabled: false
+  addressPool:
+    addresses:
+    - 10.1.2.3/32
+externalsecrets:
+  enabled: false
+
+# override pvc to upload files to the pod
+exitingPvc: 
+
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+        - ipBlock:
+            cidr: 0.0.0.0/0 # vlan cidr for xxxx
+      ports:
+        - port: 2022
+          protocol: TCP
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: apc-observability
+      ports:
+        - port: 2022
+          protocol: TCP
+
+sshdConfig: |
+  ## Use a non-privileged port
+  Port 2022
+  ## provide the new path containing these host keys
+  HostKey /opt/ssh/sshd-keys/ssh_host_rsa_key
+  HostKey /opt/ssh/sshd-keys/ssh_host_ecdsa_key
+  HostKey /opt/ssh/sshd-keys/ssh_host_ed25519_key
+  ## Enable DEBUG log. You can ignore this but this may help you debug any issue while enabling SSHD for the first time
+  LogLevel DEBUG3
+  ChallengeResponseAuthentication no
+  UsePAM no
+  X11Forwarding no
+  PrintMotd no
+  ## Provide a path to store PID file which is accessible by normal user for write purpose
+  PidFile /tmp/sshd.pid
+  AcceptEnv LANG LC_*
+  Subsystem       sftp    internal-sftp
+
+  # OVerride the Authorized Keys file as OpenShift randomizes users
+  AuthorizedKeysFile	/opt/ssh/authorized_keys
+
+
+authorizedKeys: |-
+  ssh-rsa AAAAB3NzaC1yc rsa-key-20230516
+
+initScript: |-
+  #!/bin/bash
+  set +x
+  # Generate the required keys/tokens
+  if [ ! -d /opt/ssh/sshd-keys ]; then
+    mkdir -p /opt/ssh/sshd-keys
+  fi
+  if [ ! -f /opt/ssh/sshd-keys/ssh_host_rsa_key ]; then
+    ssh-keygen -q -N "" -t rsa -b 4096 -f /opt/ssh/sshd-keys/ssh_host_rsa_key
+  fi
+  if [ ! -f /opt/ssh/sshd-keys/ssh_host_ecdsa_key ]; then
+    ssh-keygen -q -N "" -t ecdsa -f /opt/ssh/sshd-keys/ssh_host_ecdsa_key
+  fi
+  if [ ! -f /opt/ssh/sshd-keys/ssh_host_ed25519_key ]; then
+    ssh-keygen -q -N "" -t ed25519 -f /opt/ssh/sshd-keys/ssh_host_ed25519_key
+  fi
+  # Echo help
+  echo ""
+  echo "Openssh-server  is Running"
+  echo ""
+  echo "Log into the server with one of the keys set in the authorized_keys file"
+  cat /opt/ssh/authorized_keys
+  echo ""
+  echo "Use the following user"
+  echo `id -u`
+  echo ""
+  # Start openssh-server with the example configuration
+  /usr/sbin/sshd -D -f /opt/ssh/sshd_config -E /tmp/sshd.log & exec tail -F /tmp/sshd.log
+  # Sleep
+  sleep inf

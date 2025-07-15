@@ -1,0 +1,36 @@
+metaenvironment: "d"
+service:
+  type: LoadBalancer
+  annotations:
+    metallb.universe.tf/address-pool: pmdd-openssh-server-reserved
+  externalTrafficPolicy: Local
+metallb:
+  enabled: true
+  addressPool:
+    addresses:
+    - 10.14.76.102/32
+externalsecrets:
+  enabled: true
+
+# override pvc to upload files to the pod
+exitingPvc: pmdd-shared-pvc
+
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+        - ipBlock:
+            cidr: 10.14.76.0/23 # vlan cidr for xxxx
+      ports:
+        - port: 2022
+          protocol: TCP
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: apc-observability
+      ports:
+        - port: 2022
+          protocol: TCP
+
+authorizedKeys: |-
+  ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCOhfgItCjL9MSNLUWNlMrNPiHWTGyyLbYNadh0dTAZT646mmTzNyRpTalGaioOuUGLozrbNFxVLfrgi2qUBBbl+q821RikvxOpJUEJKwhQxGLSeI639jFSEc/hSMOv9VYDXnVakQUkRXagOfd5WCBLTQzVE6J7GY5dL6J913q95YmNIAeZgD3cfdVztFqtTVPorrl24/Ou2rrsWJeUmQYU9q6NmNJ8QGbIEUAK4/+LUBIPvcHm5fYdcgweF/4X87pwUWtFrAYe15oUWHAShu99hF9SFzaQArQCsyC2uydmYx+/t+6guEtr7wqAKcqGjnY0/p87+d/k4qwopI1ww7Tv rsa-key-20230516

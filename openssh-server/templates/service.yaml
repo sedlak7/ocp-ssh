@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "openssh-server.fullname" . }}
+  labels:
+  {{- include "openssh-server.labels" . | nindent 4 }}
+  annotations:
+  {{-  .Values.service.annotations | toYaml | nindent 4 }}
+    metallb.universe.tf/address-pool: {{ include "openssh-server.fullname" . }}-{{ .Release.Namespace }}
+spec:
+  type: {{ .Values.service.type }}
+  externalTrafficPolicy: {{ .Values.service.externalTrafficPolicy | default "Local" }}
+  selector:
+    {{- include "openssh-server.selectorLabels" . | nindent 4 }}
+  ports:
+  {{- .Values.service.ports | toYaml | nindent 2 }}
