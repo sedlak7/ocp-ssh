@@ -6,8 +6,8 @@ opensshServer:
     env:
       tz: Europe/Bratislava
     image:
-      repository: ghcr.io/sedlak7/sshd
-      tag: 1.0.1
+      repository: image-registry.openshift-image-registry.svc:5000/pmdd/openssh-server
+      tag: latest
   revisionHistoryLimit: 3
 service:
   ports:
@@ -18,7 +18,7 @@ service:
   type: ClusterIP
   #type: LoadBalancer
   annotations: {}
-  externalTrafficPolicy: Local
+  #externalTrafficPolicy: Local
 sa:
   serviceAccount:
     annotations: {}

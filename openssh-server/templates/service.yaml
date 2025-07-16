@@ -9,7 +9,9 @@ metadata:
     metallb.universe.tf/address-pool: {{ include "openssh-server.fullname" . }}-{{ .Release.Namespace }}
 spec:
   type: {{ .Values.service.type }}
+  {{- if .Values.service.externalTrafficPolicy }}
   externalTrafficPolicy: {{ .Values.service.externalTrafficPolicy | default "Local" }}
+  {{- end }}
   selector:
     {{- include "openssh-server.selectorLabels" . | nindent 4 }}
   ports:

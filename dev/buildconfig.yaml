@@ -1,0 +1,27 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: openssh-server
+  namespace: pmdd
+spec:
+  source:
+    type: Dockerfile
+    dockerfile: |
+      FROM registry.access.redhat.com/ubi9/ubi
+      RUN dnf install -y openssh-server && dnf clean all && rm -rf /var/cache/yum.
+      RUN useradd -m sftpuser -d /home/sftpuser -g 0 -u 1000 && echo "sftpuser:sftpuser" | chpasswd
+      RUN rm /sbin/nologin && ln /bin/bash /sbin/nologin
+      # Add init.sh script
+      RUN echo '#!/bin/bash\n\nset +x\n\n# Generate the required keys/tokens\nif [ ! -d /opt/ssh/sshd-keys ]; then\n  mkdir -p /opt/ssh/sshd-keys\nfi\nif [ ! -f /opt/ssh/sshd-keys/ssh_host_rsa_key ]; then\n  ssh-keygen -q -N "" -t rsa -b 4096 -f /opt/ssh/sshd-keys/ssh_host_rsa_key\nfi\nif [ ! -f /opt/ssh/sshd-keys/ssh_host_ecdsa_key ]; then\n  ssh-keygen -q -N "" -t ecdsa -f /opt/ssh/sshd-keys/ssh_host_ecdsa_key\nfi\nif [ ! -f /opt/ssh/sshd-keys/ssh_host_ed25519_key ]; then\n  ssh-keygen -q -N "" -t ed25519 -f /opt/ssh/sshd-keys/ssh_host_ed25519_key\nfi\n\necho "Openssh-server  is Running"\necho "Log into the server with one of the keys set in the authorized_keys file"\ncat /opt/ssh/authorized_keys\n\necho "Use the following user"\necho `id`\n\n/usr/sbin/sshd -D -f /opt/ssh/sshd_config -E /tmp/sshd.log & exec tail -F /tmp/sshd.log\n\nsleep inf' > /init.sh
+      RUN chmod +x /init.sh
+      ENTRYPOINT ["/init.sh"]
+  strategy:
+    type: Docker
+    dockerStrategy: {}
+  output:
+    to:
+      kind: ImageStreamTag
+      name: openssh-server:latest
+  triggers:
+    - type: ConfigChange
+    - type: ImageChange
