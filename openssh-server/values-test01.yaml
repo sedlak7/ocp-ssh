@@ -1,0 +1,40 @@
+metaenvironment: "t"
+service:
+  type: LoadBalancer
+  annotations:
+    metallb.universe.tf/address-pool: pmdd-openssh-server-reserved
+  externalTrafficPolicy: Local
+metallb:
+  enabled: true
+  addressPool:
+    addresses:
+    - 10.13.76.102/32
+externalsecrets:
+  enabled: true
+
+# override pvc to upload files to the pod
+exitingPvc: pmdd-shared-pvc
+
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+        - ipBlock:
+            cidr: 10.13.76.0/23 # vlan cidr for xxxx
+      ports:
+        - port: 2022
+          protocol: TCP
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: apc-observability
+      ports:
+        - port: 2022
+          protocol: TCP
+
+authorizedKeys: |-
+  ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCOhfgItCjL9MSNLUWNlMrNPiHWTGyyLbYNadh0dTAZT646mmTzNyRpTalGaioOuUGLozrbNFxVLfrgi2qUBBbl+q821RikvxOpJUEJKwhQxGLSeI639jFSEc/hSMOv9VYDXnVakQUkRXagOfd5WCBLTQzVE6J7GY5dL6J913q95YmNIAeZgD3cfdVztFqtTVPorrl24/Ou2rrsWJeUmQYU9q6NmNJ8QGbIEUAK4/+LUBIPvcHm5fYdcgweF/4X87pwUWtFrAYe15oUWHAShu99hF9SFzaQArQCsyC2uydmYx+/t+6guEtr7wqAKcqGjnY0/p87+d/k4qwopI1ww7Tv rsa-key-20230516
+  ssh-dss AAAAB3NzaC1kc3MAAACBAPS/Egad8+oKn2iNr7ySYi13QjamMdf0vYtKte0MS+D+Xswqp5TmZQg5Ym7CA6LGdBvJYYrbC2AsrZ2ePHdMjyfuDwDK4sbSSrxw2qhkM3nuVgQ8UxaM6fLkU0t+UihsiHpK2QDCzeWDKwJAMVbq1TrORPLG2CfY7oi40ap4AwnhAAAAFQCr7P6DkgTFEZsg57Ao0BDm7yTBcwAAAIEArwOpthzpu7ddV1XpbHXNwSCefOUiKWV0BhEDE6BuGg36ffHT3Lj2okqlsqCzgaKCzuMwSpIqbSZv3UEemWmJubFHgXjtPTrHkdFg++a2NixQPlL8MevkIlAQP3oKgTTTlEJl+AIkLcec04sySOJGqhK2gwYK/8cXVGI5357M27kAAACAPZ/5ZuetfpfOzt18DhrOpLI2nqY0Eem1EqonFwMCUXvySwhNZ9ZN/HS8IiTEy/rgqehUmjbbV/dJxF0qAM1lFzklKgIgQjTuOJxFXM+91JhVZ2m/IGE4c6XDvib+VDEpCyRd6jSd3VpOnUHrvdsk/ePKhVl8/a2SqjKgvHcQ16k= S0@ZO25
+  ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBOLbtPQFjJ9fXgImHQ3MwkRVABn91HUjjBqr3VqIeAMAcoMU+5PhFhPmmmx9O8np1P33V6bMXFGMdgljJe0CV1Y= S0@ZO25
+  ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM2+H1+OrYgdeOa7FGSA05pJHJZk54gj+vw90hI74kBy S0@ZO25
+  ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDoFJ1/mjO/C5chTTO34bTK8HfioBNEubavTSNk8yPf7BRVX4yfqg+LVgnaaG8diRJY4dQPYomZzT+yIvZ42J5+tCDno+IOVPVa5qJzVe/0eI/y1wD5rLZiWK83wRVZE18DSFutVciniyZjWdYc7x/5ctDFPO84RJhSECoMusGWUhFxi3264VtnUYqyNURqNO5vxEA4QylQlNZ44kjby0UKQD9yAzgeIzXMeFABDYw8YHConONdFvtbR5CNQvuOhgwQHc1llIQ8NtzUscMzLuBGXE4RBgX0RsPnjKBF9KUi4HlptWKUH7MGFg2qp8Fcvl+tGwfVs3Ep43xN8xDo5nrf S0@ZO25
