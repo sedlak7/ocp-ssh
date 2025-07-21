@@ -8,6 +8,13 @@ opensshServer:
     image:
       repository: image-registry.openshift-image-registry.svc:5000/pmdd/openssh-server
       tag: latest
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
   revisionHistoryLimit: 3
 service:
   ports:

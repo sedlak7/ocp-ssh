@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-to-sp-proxy-for-imagebuild
+  labels:
+  {{- include "openssh-server.labels" . | nindent 4 }}
+  annotations:
+  {{-  .Values.service.annotations | toYaml | nindent 4 }}
+spec:
+  egress:
+  - to:
+    - ipBlock:
+        cidr: 10.1.1.7/32
+  podSelector:
+    matchExpressions:
+      - key: openshift.io/build.name
+        operator: Exists
+  policyTypes:
+  - Egress

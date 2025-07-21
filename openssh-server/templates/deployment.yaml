@@ -24,7 +24,24 @@ spec:
         ports:
         - containerPort: 2022
           name: ssh
-        resources: {}
+        probes:
+          livenessProbe:
+            tcpSocket:
+              port: ssh
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          readinessProbe:
+            tcpSocket:
+              port: ssh
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          startupProbe:
+            tcpSocket:
+              port: ssh
+            initialDelaySeconds: 5
+            periodSeconds: 30
+        resources:
+          {{- toYaml .Values.opensshServer.opensshServer.resources | nindent 10 }}
         securityContext: {{- toYaml .Values.opensshServer.opensshServer.containerSecurityContext
           | nindent 10 }}
         volumeMounts:
